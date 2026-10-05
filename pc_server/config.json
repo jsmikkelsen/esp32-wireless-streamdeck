@@ -1,0 +1,82 @@
+{
+  "channels": [
+    {
+      "label": "MST",
+      "target": "master",
+      "description": "Master Windows Volume"
+    },
+    {
+      "label": "DIS",
+      "target": "discord.exe",
+      "description": "Discord Voice & Sounds"
+    },
+    {
+      "label": "SPT",
+      "target": "spotify.exe",
+      "description": "Spotify Desktop Client"
+    },
+    {
+      "label": "APP",
+      "target": "chrome.exe",
+      "description": "Google Chrome / Browser"
+    }
+  ],
+  "keys": {
+    "1": {
+      "name": "Play / Pause",
+      "action": "media_play_pause"
+    },
+    "2": {
+      "name": "Next Track",
+      "action": "media_next"
+    },
+    "3": {
+      "name": "Previous Track",
+      "action": "media_prev"
+    },
+    "4": {
+      "name": "Mute Master Sound",
+      "action": "media_mute"
+    },
+    "5": {
+      "name": "Discord Mute Mic",
+      "action": "hotkey",
+      "keys": ["ctrl", "shift", "m"]
+    },
+    "6": {
+      "name": "Discord Deafen",
+      "action": "hotkey",
+      "keys": ["ctrl", "shift", "d"]
+    },
+    "7": {
+      "name": "Show Desktop",
+      "action": "hotkey",
+      "keys": ["win", "d"]
+    },
+    "8": {
+      "name": "Task Manager",
+      "action": "hotkey",
+      "keys": ["ctrl", "shift", "esc"]
+    },
+    "9": {
+      "name": "Launch Calculator",
+      "action": "launch",
+      "cmd": "calc.exe"
+    },
+    "10": {
+      "name": "OBS Stream Toggle",
+      "action": "hotkey",
+      "keys": ["f13"]
+    },
+    "11": {
+      "name": "OBS Record Toggle",
+      "action": "hotkey",
+      "keys": ["f14"]
+    },
+    "12": {
+      "name": "Screenshot Area",
+      "action": "hotkey",
+      "keys": ["win", "shift", "s"]
+    }
+  }
+}
