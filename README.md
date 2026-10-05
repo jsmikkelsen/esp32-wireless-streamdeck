@@ -21,6 +21,12 @@ Projektet forbinder trådløst til din PC via Wi-Fi og en ultra-lav latens WebSo
 
 ```text
 esp32-wireless-streamdeck/
+├── 3D/                           # 3D-filer til kabinet (STL, OpenSCAD og generator)
+│   ├── streamdeck_top_plate.stl  # Topplade klar til 3D-print
+│   ├── streamdeck_bottom_case.stl# Bundkabinet med USB-port klar til 3D-print
+│   ├── generate_case.py          # Python STL generator
+│   ├── streamdeck_case.scad      # Parametrisk OpenSCAD kildekode
+│   └── README.md                 # Print- og monteringsvejledning
 ├── docs/
 │   └── WIRING.md                 # Komplet lodde- og kablingsguide med diagrammer
 ├── firmware/
