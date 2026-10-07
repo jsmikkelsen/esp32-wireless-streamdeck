@@ -51,10 +51,7 @@ usb_w            = 14.0;
 usb_h            = 8.0;
 usb_x            = case_width / 2; // Centreret bagpå
 
-$fn = 40;
-
-// Beregnet hældningsvinkel
-tilt_angle = atan2(back_height - front_height, case_depth);
+$fn = 60; // Giver meget pæne, glatte runde huller i 3D-printet
 
 // ===================================================================
 // MODULER
@@ -144,9 +141,9 @@ module bottom_wedge_case() {
             ]);
         }
 
-        // USB-port åbning på bagvæggen
-        translate([usb_x - usb_w / 2, case_depth - wall_thickness - 1, floor_thickness])
-            cube([usb_w, wall_thickness + 2, usb_h]);
+        // USB-port åbning på bagvæggen (Gennemgående hul!)
+        translate([usb_x - usb_w / 2, case_depth - wall_thickness - shelf_width - 1, floor_thickness])
+            cube([usb_w, wall_thickness + shelf_width + 2, usb_h]);
     }
 }
 
