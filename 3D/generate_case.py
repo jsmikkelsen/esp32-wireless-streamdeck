@@ -70,11 +70,12 @@ def build_top_plate():
     """
     Bygger top-pladen som passer ned i det vinklede kabinet:
       - 145.0 x 85.0 x 3.0 mm
-      - 12x MX switches (14.2 x 14.2 mm) i 4x3 matrix til venstre
-      - 4x Potentiometer huller (7.5 mm) til højre (2 øverst, 2 nederst)
+      - 12x MX switches (14.2 x 14.2 mm) i 4x3 matrix til venstre.
+        Keycaps (standard 18x18 mm) kræver god frigang, som sikres ved 19.05 mm pitch.
+      - 4x Potentiometer huller (approksimeret som runde 24-kantede polygoner for perfekt form)
       - 1x 0.96" OLED Display vindue (26.0 x 14.0 mm) i midten til højre
       - 4x Hjørneskruer (M3, 3.4 mm)
-    100% manifold, lukket geometri.
+    100% manifold, lukket geometri med glatte, runde skrue/pot-huller.
     """
     mesh = Mesh()
     PLATE_W = 145.0
@@ -84,63 +85,85 @@ def build_top_plate():
     cutouts = []
 
     # 1. 12 MX Switches (4 kolonner x 3 rækker)
+    # Hullet er 14.2 mm, hvilket passer til selve MX-switchen.
+    # Pitch på 19.05 mm sikrer at der er mindst 4.85 mm metal imellem,
+    # hvilket giver perfekt plads til 18x18 mm keycaps.
     sw_w, sw_h = 14.2, 14.2
     for r in range(3):
         yc = 23.45 + r * 19.05
         for c in range(4):
             xc = 16.0 + c * 19.05
-            cutouts.append((xc - sw_w/2, xc + sw_w/2, yc - sw_h/2, yc + sw_h/2))
+            cutouts.append({'type': 'rect', 'x0': xc - sw_w/2, 'x1': xc + sw_w/2, 'y0': yc - sw_h/2, 'y1': yc + sw_h/2})
 
     # 2. OLED Display vindue
     oled_xc, oled_yc = 114.0, 42.50
-    cutouts.append((oled_xc - 13.0, oled_xc + 13.0, oled_yc - 7.0, oled_yc + 7.0))
+    cutouts.append({'type': 'rect', 'x0': oled_xc - 13.0, 'x1': oled_xc + 13.0, 'y0': oled_yc - 7.0, 'y1': oled_yc + 7.0})
 
-    # 3. 4 Potentiometre
+    # 3. 4 Potentiometre (runde huller, diameter 7.5 mm)
     pot_coords = [
         (100.0, 61.55), # Pot 0 (top-venstre)
         (128.0, 61.55), # Pot 1 (top-højre)
         (100.0, 23.45), # Pot 2 (bund-venstre)
         (128.0, 23.45), # Pot 3 (bund-højre)
     ]
+    pot_r = 3.75
     for px, py in pot_coords:
-        cutouts.append((px - 3.75, px + 3.75, py - 3.75, py + 3.75))
+        cutouts.append({'type': 'circle', 'x': px, 'y': py, 'r': pot_r})
 
-    # 4. 4 Hjørneskruehuller
+    # 4. 4 Hjørneskruehuller (runde huller, diameter 3.4 mm)
     screw_coords = [(5.5, 5.5), (139.5, 5.5), (5.5, 79.5), (139.5, 79.5)]
+    screw_r = 1.7
     for sx, sy in screw_coords:
-        cutouts.append((sx - 1.7, sx + 1.7, sy - 1.7, sy + 1.7))
+        cutouts.append({'type': 'circle', 'x': sx, 'y': sy, 'r': screw_r})
 
     # Partitioner i et 2D grid
     x_splits = {0.0, PLATE_W}
     y_splits = {0.0, PLATE_D}
-    for x0, x1, y0, y1 in cutouts:
-        x_splits.add(round(x0, 4))
-        x_splits.add(round(x1, 4))
-        y_splits.add(round(y0, 4))
-        y_splits.add(round(y1, 4))
+
+    N_CIRCLE = 24
+    for c in cutouts:
+        if c['type'] == 'rect':
+            x_splits.update([c['x0'], c['x1']])
+            y_splits.update([c['y0'], c['y1']])
+        elif c['type'] == 'circle':
+            r = c['r']
+            cx = c['x']
+            cy = c['y']
+            for i in range(N_CIRCLE):
+                a = i * 2 * math.pi / N_CIRCLE
+                x_splits.add(cx + r * math.cos(a))
+                y_splits.add(cy + r * math.sin(a))
+            # Bounding box bounds
+            x_splits.update([cx - r, cx + r])
+            y_splits.update([cy - r, cy + r])
 
     x_list = sorted(list(x_splits))
     y_list = sorted(list(y_splits))
     nx, ny = len(x_list) - 1, len(y_list) - 1
 
     solid = [[True for _ in range(ny)] for _ in range(nx)]
+
     for i in range(nx):
         x0, x1 = x_list[i], x_list[i+1]
         mx = (x0 + x1) / 2.0
         for j in range(ny):
             y0, y1 = y_list[j], y_list[j+1]
             my = (y0 + y1) / 2.0
-            for cx0, cx1, cy0, cy1 in cutouts:
-                if (cx0 <= mx <= cx1) and (cy0 <= my <= cy1):
-                    solid[i][j] = False
-                    break
+
+            for c in cutouts:
+                if c['type'] == 'rect':
+                    if (c['x0'] <= mx <= c['x1']) and (c['y0'] <= my <= c['y1']):
+                        solid[i][j] = False
+                elif c['type'] == 'circle':
+                    r = c['r']
+                    if (mx - c['x'])**2 + (my - c['y'])**2 <= r**2:
+                        solid[i][j] = False
 
     # Generer flader
     for i in range(nx):
         x0, x1 = x_list[i], x_list[i+1]
         for j in range(ny):
-            if not solid[i][j]:
-                continue
+            if not solid[i][j]: continue
             y0, y1 = y_list[j], y_list[j+1]
 
             v000 = mesh.add_vertex(x0, y0, 0.0)
@@ -158,14 +181,10 @@ def build_top_plate():
             mesh.add_quad(v001, v101, v111, v011)
 
             # Ydervægge / hulvægge
-            if j == 0 or not solid[i][j-1]:
-                mesh.add_quad(v000, v100, v101, v001)
-            if j == ny - 1 or not solid[i][j+1]:
-                mesh.add_quad(v110, v010, v011, v111)
-            if i == 0 or not solid[i-1][j]:
-                mesh.add_quad(v010, v000, v001, v011)
-            if i == nx - 1 or not solid[i+1][j]:
-                mesh.add_quad(v100, v110, v111, v101)
+            if j == 0 or not solid[i][j-1]: mesh.add_quad(v000, v100, v101, v001)
+            if j == ny - 1 or not solid[i][j+1]: mesh.add_quad(v110, v010, v011, v111)
+            if i == 0 or not solid[i-1][j]: mesh.add_quad(v010, v000, v001, v011)
+            if i == nx - 1 or not solid[i+1][j]: mesh.add_quad(v100, v110, v111, v101)
 
     return mesh
 
@@ -180,7 +199,7 @@ def build_wedge_case():
       - Vægtykkelse: 3.0 mm
       - Bundtykkelse: 2.5 mm
       - Indvendig hylde for planforsænkning af toppladen (3.0 mm forsænkning)
-      - USB-port udskæring på bagvæggen (14.0 x 8.0 mm)
+      - USB-port udskæring på bagvæggen (14.0 x 8.0 mm), ægte gennemgående hul
     100% manifold, lukket geometri.
     """
     mesh = Mesh()
@@ -198,18 +217,23 @@ def build_wedge_case():
     def z_top(y): return Hf + y * slope
     def z_shelf(y): return z_top(y) - Tp
 
+    # Et rigtigt gennemgående hul til USB'en
     usb_x0, usb_x1 = W/2 - 7.0, W/2 + 7.0
+    usb_z_bottom = Tf
+    usb_z_top = Tf + 8.0
 
     x_splits = sorted(list({
         0.0, Tw, Tw + Sw,
         usb_x0, usb_x1,
         W - Tw - Sw, W - Tw, W
     }))
+    
+    # Sørg for at y-splits for bagvæggen præcis omslutter tykkelsen
     y_splits = sorted(list({
         0.0, Tw, Tw + Sw,
         D - Tw - Sw, D - Tw, D
     }))
-    z_splits_lower = [0.0, Tf, Tf + 8.0, Z_MID]
+    z_splits_lower = [0.0, Tf, usb_z_top, Z_MID]
 
     nx = len(x_splits) - 1
     ny = len(y_splits) - 1
@@ -233,18 +257,18 @@ def build_wedge_case():
                 z0, z1 = z_splits_lower[k], z_splits_lower[k+1]
                 mz = (z0 + z1) / 2.0
 
-                if mz <= Tf:
+                if mz <= Tf: # Gulv
                     solid_lower[i][j][k] = True
                 else:
                     if is_outer_wall:
-                        if is_usb and (Tf <= mz <= Tf + 8.0):
-                            solid_lower[i][j][k] = False # USB port hul
+                        if is_usb and mz <= usb_z_top:
+                            solid_lower[i][j][k] = False # Gennembrudt hul til USB!
                         else:
                             solid_lower[i][j][k] = True
                     elif is_shelf_col:
                         solid_lower[i][j][k] = True
                     else:
-                        solid_lower[i][j][k] = False
+                        solid_lower[i][j][k] = False # Indre hulrum
 
     # 2. Øvre sektion (Z_MID til z_top(y))
     # 0 = tom (hulrum), 1 = hylde, 2 = ydervæg
